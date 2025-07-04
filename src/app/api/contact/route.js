@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 export async function POST(request) {
   try {
@@ -13,43 +13,30 @@ export async function POST(request) {
       );
     }
 
-    // Log that we're about to send email
-    console.log("Attempting to send email with Gmail SMTP...");
-    console.log(
-      "Gmail credentials exist:",
-      !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD
-    );
+    // Log that we're about to send email and check API key
+    console.log("Attempting to send email with Resend...");
+    console.log("API Key exists:", !!process.env.RESEND_API_KEY);
 
-    // Create transporter using Gmail SMTP
-    const transporter = nodemailer.createTransporter({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER, // Your Gmail address
-        pass: process.env.GMAIL_APP_PASSWORD, // Gmail App Password
-      },
-    });
-
-    // Email content
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: "Himanshu.yengal@gmail.com",
-      subject: `New Contact Form Submission from ${name}`,
-      html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Venue:</strong> ${venue || "Not provided"}</p>
-        <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message}</p>
-      `,
-    };
-
+    // Send email using Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
     try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log("Email sent successfully:", info.messageId);
+      const data = await resend.emails.send({
+        from: "onboarding@resend.dev", // Using Resend's default sending domain
+        to: "Himanshu.yengal@gmail.com",
+        subject: `New Contact Form Submission from ${name}`,
+        html: `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Venue:</strong> ${venue || "Not provided"}</p>
+          <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+        `,
+      });
+      console.log("Email sent successfully:", data);
     } catch (emailError) {
-      console.error("Email sending error:", emailError);
+      console.error("Resend API Error:", emailError);
       throw emailError;
     }
 
@@ -72,6 +59,4 @@ export async function POST(request) {
   }
 }
 
-// NOTE: Add these to your .env file:
-// GMAIL_USER=your-email@gmail.com
-// GMAIL_APP_PASSWORD=your-gmail-app-password
+// NOTE: Ensure RESEND_API_KEY is set in your environment for this to work.
